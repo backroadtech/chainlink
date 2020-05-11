@@ -40,12 +40,6 @@ var (
 )
 
 const (
-	// How many block numbers deep to keep heads in the DB
-	blockHeightToKeep = 100
-
-	// How many nodes to return from the top of the longest chain
-	chainDepth = 12
-
 	// Log a warning if OnNewLongestChain callback execution takes longer than this amount of time
 	callbackExecutionThreshold = 10 * time.Second
 )
@@ -149,7 +143,7 @@ func (ht *HeadTracker) Save(h models.Head) error {
 	if err != nil {
 		return err
 	}
-	return ht.store.TrimOldHeads(blockHeightToKeep)
+	return ht.store.TrimOldHeads(ht.store.Config.EthHeadTrackerHistoryDepth())
 }
 
 // HighestSeenHead returns the block header with the highest number that has been seen, or nil
@@ -282,7 +276,7 @@ func (ht *HeadTracker) handleNewHead(bh gethTypes.Header) error {
 }
 
 func (ht *HeadTracker) handleNewHighestHead(head models.Head) error {
-	headWithChain, err := ht.store.Chain(head.Hash, chainDepth)
+	headWithChain, err := ht.store.Chain(head.Hash, ht.store.Config.EthFinalityDepth())
 	if err != nil {
 		return err
 	}
@@ -296,6 +290,7 @@ func (ht *HeadTracker) handleNewHighestHead(head models.Head) error {
 func (ht *HeadTracker) onNewLongestChain(headWithChain models.Head) {
 	ht.headMutex.Lock()
 	defer ht.headMutex.Unlock()
+	logger.Debugf("HeadTracker initiating callbacks for head %v with chain length %v", headWithChain.Number, headWithChain.ChainLength())
 
 	for _, trackable := range ht.callbacks {
 		trackable.OnNewLongestChain(headWithChain)
