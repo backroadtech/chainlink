@@ -35,13 +35,14 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+
+	"go.dedis.ch/kyber/v3"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/smartcontractkit/chainlink/core/services/signatures/secp256k1"
 	"github.com/smartcontractkit/chainlink/core/utils"
-
-	"go.dedis.ch/kyber/v3"
 )
 
 func bigFromHex(s string) *big.Int {

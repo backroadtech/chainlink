@@ -100,7 +100,7 @@ func compareCurrentCompilerAritfactAgainstRecordsAndSoliditySources(
 		binBytes = binBytes[:len(binBytes)-106]
 	}
 	hasher := sha256.New()
-	hashMsg := string(abiBytes+binBytes) + "\n" // newline from <<< in record_versions.sh
+	hashMsg := abiBytes + binBytes + "\n" // newline from <<< in record_versions.sh
 	_, err = io.WriteString(hasher, hashMsg)
 	require.NoError(t, err, "failed to hash compiler artifact %s", apath)
 	thisDir, err := os.Getwd()
