@@ -82,7 +82,8 @@ func (ra *Random) Perform(input models.RunInput, store *store.Store) models.RunO
 	return models.NewRunOutputCompleteWithResult(ethereumByteArray)
 }
 
-// getInputs parses the JSON input and returns an error, or the values in it.
+// getInputs parses the JSON input for the values needed by the random adapter,
+// or returns an error.
 func getInputs(ra *Random, input models.RunInput, store *store.Store) (
 	key *vrfkey.PublicKey, preSeed *vrf.Seed, blockHash *common.Hash,
 	blockNum *uint64, err error) {
