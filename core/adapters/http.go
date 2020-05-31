@@ -20,6 +20,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/utils"
 
 	"github.com/avast/retry-go"
+	"go.uber.org/multierr"
 )
 
 // HTTPGet requires a URL which is used for a GET request when the adapter is called.
@@ -206,7 +207,11 @@ func withRetry(
 			if e != nil {
 				return e
 			}
-			defer r.Body.Close()
+			defer func() {
+				if rerr := r.Body.Close(); rerr != nil {
+					err = multierr.Append(err, rerr)
+				}
+			}()
 			statusCode = r.StatusCode
 			elapsed := time.Since(start)
 			logger.Debugw(fmt.Sprintf("http adapter got %v in %s", statusCode, elapsed), "statusCode", statusCode, "timeElapsedSeconds", elapsed)

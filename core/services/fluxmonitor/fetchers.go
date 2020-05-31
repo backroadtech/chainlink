@@ -49,7 +49,7 @@ func newHTTPFetcher(
 	}
 }
 
-func (p *httpFetcher) Fetch() (decimal.Decimal, error) {
+func (p *httpFetcher) Fetch() (d decimal.Decimal, err error) {
 	request, err := withRandomID(p.requestData)
 	if err != nil {
 		return decimal.Decimal{}, errors.Wrap(err, fmt.Sprintf("unable to fetch price from %s, cannot add request ID", p.url.String()))
@@ -59,7 +59,11 @@ func (p *httpFetcher) Fetch() (decimal.Decimal, error) {
 		return decimal.Decimal{}, errors.Wrap(err, fmt.Sprintf("unable to fetch price from %s with payload '%s'", p.url.String(), p.requestData))
 	}
 
-	defer r.Body.Close()
+	defer func() {
+		if cerr := r.Body.Close(); cerr != nil {
+			err = multierr.Append(err, cerr)
+		}
+	}()
 	target := adapterResponse{}
 	if err = json.NewDecoder(r.Body).Decode(&target); err != nil {
 		return decimal.Decimal{}, errors.Wrap(err, fmt.Sprintf("unable to decode price from %s", p.url.String()))

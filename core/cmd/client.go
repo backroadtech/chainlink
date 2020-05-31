@@ -236,9 +236,9 @@ func (t *SessionCookieAuthenticator) Cookie() (*http.Cookie, error) {
 }
 
 // Authenticate retrieves a session ID via a cookie and saves it to disk.
-func (t *SessionCookieAuthenticator) Authenticate(sessionRequest models.SessionRequest) (*http.Cookie, error) {
+func (t *SessionCookieAuthenticator) Authenticate(sessionRequest models.SessionRequest) (sc *http.Cookie, err error) {
 	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(sessionRequest)
+	err = json.NewEncoder(b).Encode(sessionRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,11 @@ func (t *SessionCookieAuthenticator) Authenticate(sessionRequest models.SessionR
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = multierr.Append(err, cerr)
+		}
+	}()
 
 	_, err = parseResponse(resp)
 	if err != nil {
@@ -265,8 +269,9 @@ func (t *SessionCookieAuthenticator) Authenticate(sessionRequest models.SessionR
 	if len(cookies) == 0 {
 		return nil, errors.New("did not receive cookie with session id")
 	}
-	sc := web.FindSessionCookie(cookies)
-	return sc, t.store.Save(sc)
+	sc = web.FindSessionCookie(cookies)
+	err = t.store.Save(sc)
+	return sc, err
 }
 
 // CookieStore is a place to store and retrieve cookies.

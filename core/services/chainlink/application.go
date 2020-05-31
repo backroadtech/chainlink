@@ -1,6 +1,7 @@
 package chainlink
 
 import (
+	stderr "errors"
 	"os"
 	"os/signal"
 	"sync"
@@ -158,18 +159,23 @@ func (app *ChainlinkApplication) Start() error {
 
 // Stop allows the application to exit by halting schedules, closing
 // logs, and closing the DB connection.
-func (app *ChainlinkApplication) Stop() error {
-	var merr error
+func (app *ChainlinkApplication) Stop() (merr error) {
 	app.shutdownOnce.Do(func() {
-		defer logger.Sync()
+		defer func() {
+			if err := logger.Sync(); err != nil {
+				if stderr.Unwrap(err).Error() != os.ErrInvalid.Error() {
+					merr = multierr.Append(merr, err)
+				}
+			}
+		}()
 		logger.Info("Gracefully exiting...")
 
 		app.Scheduler.Stop()
 		merr = multierr.Append(merr, app.HeadTracker.Stop())
-		app.JobSubscriber.Stop()
+		merr = multierr.Append(merr, app.JobSubscriber.Stop())
 		app.FluxMonitor.Stop()
 		app.RunQueue.Stop()
-		app.StatsPusher.Close()
+		merr = multierr.Append(merr, app.StatsPusher.Close())
 		merr = multierr.Append(merr, app.SessionReaper.Stop())
 		merr = multierr.Append(merr, app.Store.Close())
 	})

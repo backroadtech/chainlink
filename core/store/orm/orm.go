@@ -1000,7 +1000,7 @@ func (orm *ORM) TrimOldHeads(n int) (err error) {
 
 // Chain returns the chain of heads starting at hash and up to lookback parents
 // This can return nil if no head with the given hash is found
-func (orm *ORM) Chain(hash common.Hash, lookback uint) (*models.Head, error) {
+func (orm *ORM) Chain(hash common.Hash, lookback uint) (head *models.Head, err error) {
 	rows, err := orm.db.Raw(`
 	WITH RECURSIVE chain AS (
 		SELECT * FROM heads WHERE hash = ?
@@ -1012,7 +1012,11 @@ func (orm *ORM) Chain(hash common.Hash, lookback uint) (*models.Head, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			err = multierr.Append(err, cerr)
+		}
+	}()
 	var firstHead *models.Head
 	var prevHead *models.Head
 	for rows.Next() {

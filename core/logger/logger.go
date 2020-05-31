@@ -3,6 +3,7 @@
 package logger
 
 import (
+	stderr "errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -57,7 +58,14 @@ func (l *Logger) Write(b []byte) (int, error) {
 // SetLogger sets the internal logger to the given input.
 func SetLogger(zl *zap.Logger) {
 	if logger != nil {
-		defer logger.Sync()
+		defer func() {
+			if err := logger.Sync(); err != nil {
+				if stderr.Unwrap(err).Error() != os.ErrInvalid.Error() {
+					// logger.Sync() will return 'invalid argument' error when closing file
+					log.Fatalf("failed to sync logger %+v", err)
+				}
+			}
+		}()
 	}
 	logger = &Logger{zl.Sugar()}
 }
