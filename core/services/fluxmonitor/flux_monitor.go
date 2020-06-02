@@ -687,7 +687,8 @@ func (p *PollingDeviationChecker) respondToNewRoundLog(log contracts.LogNewRound
 		return
 	}
 
-	err = p.createJobRun(polledAnswer, p.reportableRoundID)
+	payment := assets.Link(*roundState.PaymentAmount)
+	err = p.createJobRun(polledAnswer, p.reportableRoundID, &payment)
 	if err != nil {
 		logger.Errorw(fmt.Sprintf("unable to create job run: %v", err), p.loggerFieldsForNewRound(log)...)
 		return
@@ -800,7 +801,8 @@ func (p *PollingDeviationChecker) pollIfEligible(
 		logger.Infow("starting first round", loggerFields...)
 	}
 
-	err = p.createJobRun(polledAnswer, p.reportableRoundID)
+	payment := assets.Link(*roundState.PaymentAmount)
+	err = p.createJobRun(polledAnswer, p.reportableRoundID, &payment)
 	if err != nil {
 		logger.Errorw(fmt.Sprintf("can't create job run: %v", err), loggerFields...)
 		return false
@@ -886,7 +888,11 @@ type jobRunRequest struct {
 	DataPrefix       string          `json:"dataPrefix"`
 }
 
-func (p *PollingDeviationChecker) createJobRun(polledAnswer decimal.Decimal, nextRound *big.Int) error {
+func (p *PollingDeviationChecker) createJobRun(
+	polledAnswer decimal.Decimal,
+	nextRound *big.Int,
+	paymentAmount *assets.Link,
+) error {
 	methodID, err := p.fluxAggregator.GetMethodID("submit")
 	if err != nil {
 		return err
@@ -911,6 +917,7 @@ func (p *PollingDeviationChecker) createJobRun(polledAnswer decimal.Decimal, nex
 		return errors.Wrap(err, fmt.Sprintf("unable to start chainlink run with payload %s", payload))
 	}
 	runRequest := models.NewRunRequest(runData)
+	runRequest.Payment = paymentAmount
 
 	_, err = p.runManager.Create(p.initr.JobSpecID, &p.initr, nil, runRequest)
 	if err != nil {
