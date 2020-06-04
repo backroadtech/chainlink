@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/smartcontractkit/chainlink/core/logger"
 	"io"
 	"sort"
 	"strings"
@@ -22,7 +23,8 @@ import (
 func NormalizedJSON(val []byte) (string, error) {
 	// Unmarshal into a generic interface{}
 	var data interface{}
-	if err := json.Unmarshal(val, &data); err != nil {
+	var err error
+	if err = json.Unmarshal(val, &data); err != nil {
 		return "", err
 	}
 
@@ -31,14 +33,18 @@ func NormalizedJSON(val []byte) (string, error) {
 
 	// Wrap the buffer in a normalization writer
 	wc := norm.NFC.Writer(writer)
-	defer wc.Close()
+	defer logger.ErrorIfCalling(wc.Close)
 
 	// Now marshal the generic interface
-	if err := marshal(wc, data); err != nil {
+	if err = marshal(wc, data); err != nil {
 		return "", err
 	}
-	wc.Close()
-	writer.Flush()
+	if err = wc.Close(); err != nil {
+		return "", err
+	}
+	if err = writer.Flush(); err != nil {
+		return "", err
+	}
 	return buffer.String(), nil
 }
 

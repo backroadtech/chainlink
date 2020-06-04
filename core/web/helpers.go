@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/smartcontractkit/chainlink/core/logger"
+
 	"github.com/smartcontractkit/chainlink/core/store/models"
 	"github.com/smartcontractkit/chainlink/core/store/orm"
 
@@ -25,7 +27,11 @@ func StatusCodeForError(err interface{}) int {
 // jsonAPIError adds an error to the gin context and sets
 // the JSON value of errors.
 func jsonAPIError(c *gin.Context, statusCode int, err error) {
-	c.Error(err).SetType(gin.ErrorTypePublic)
+	if serr := c.Error(err).SetType(gin.ErrorTypePublic); serr != nil {
+		logger.Errorf("failed when set error type err: %s", err)
+		return
+	}
+
 	switch v := err.(type) {
 	case *models.JSONAPIErrors:
 		c.JSON(statusCode, v)

@@ -308,7 +308,10 @@ func ExtractFeedURLs(feeds models.Feeds, orm *orm.ORM) ([]*url.URL, error) {
 		case string: // feed url - ex: "http://example.com"
 			bridgeURL, err = url.ParseRequestURI(feed)
 		case map[string]interface{}: // named feed - ex: {"bridge": "bridgeName"}
-			bridgeName := feed["bridge"].(string)
+			bridgeName, ok := feed["bridge"].(string)
+			if !ok {
+				return nil, errors.New("failed to convert bright type into string")
+			}
 			bridgeURL, err = GetBridgeURLFromName(bridgeName, orm) // XXX: currently an n query
 		default:
 			err = errors.New("unable to extract feed URLs from json")
@@ -583,21 +586,25 @@ func (p *PollingDeviationChecker) determineMostRecentSubmittedRoundID() {
 
 func (p *PollingDeviationChecker) processLogs() {
 	for !p.backlog.Empty() {
-		maybeLog := p.backlog.Take().(maybeLog)
-
-		if maybeLog.Err != nil {
-			logger.Errorf("error received from log broadcaster: %v", maybeLog.Err)
+		mbLog, ok := p.backlog.Take().(maybeLog)
+		if !ok {
+			logger.Errorf("PollingDeviationChecker backlog expects take maybeLog type")
 			continue
 		}
 
-		switch log := maybeLog.LogBroadcast.Log().(type) {
+		if mbLog.Err != nil {
+			logger.Errorf("error received from log broadcaster: %v", mbLog.Err)
+			continue
+		}
+
+		switch log := mbLog.LogBroadcast.Log().(type) {
 		case *contracts.LogNewRound:
 			logger.Debugw("NewRound log", p.loggerFieldsForNewRound(*log)...)
-			consumeLogBroadcast(maybeLog.LogBroadcast, func() { p.respondToNewRoundLog(*log) })
+			consumeLogBroadcast(mbLog.LogBroadcast, func() { p.respondToNewRoundLog(*log) })
 
 		case *contracts.LogAnswerUpdated:
 			logger.Debugw("AnswerUpdated log", p.loggerFieldsForAnswerUpdated(*log)...)
-			consumeLogBroadcast(maybeLog.LogBroadcast, func() { p.respondToAnswerUpdatedLog(*log) })
+			consumeLogBroadcast(mbLog.LogBroadcast, func() { p.respondToAnswerUpdatedLog(*log) })
 
 		default:
 			logger.Errorf("unknown log %v of type %T", log, log)
