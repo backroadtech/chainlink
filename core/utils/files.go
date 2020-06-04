@@ -1,10 +1,11 @@
 package utils
 
 import (
-	"github.com/smartcontractkit/chainlink/core/logger"
 	"io"
 	"io/ioutil"
 	"os"
+
+	"go.uber.org/multierr"
 
 	"github.com/pkg/errors"
 )
@@ -47,12 +48,16 @@ func EnsureDirAndMaxPerms(path string, perms os.FileMode) error {
 
 // Writes `data` to `path` and ensures that the file has permissions that
 // are no more permissive than the given ones.
-func WriteFileWithMaxPerms(path string, data []byte, perms os.FileMode) error {
+func WriteFileWithMaxPerms(path string, data []byte, perms os.FileMode) (err error) {
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, perms)
 	if err != nil {
 		return err
 	}
-	defer logger.ErrorIfCalling(f.Close)
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			err = multierr.Append(err, cerr)
+		}
+	}()
 	err = EnsureFileMaxPerms(f, perms)
 	if err != nil {
 		return err
@@ -63,18 +68,26 @@ func WriteFileWithMaxPerms(path string, data []byte, perms os.FileMode) error {
 
 // Copies the file at `srcPath` to `dstPath` and ensures that it has
 // permissions that are no more permissive than the given ones.
-func CopyFileWithMaxPerms(srcPath, dstPath string, perms os.FileMode) error {
+func CopyFileWithMaxPerms(srcPath, dstPath string, perms os.FileMode) (err error) {
 	src, err := os.Open(srcPath)
 	if err != nil {
 		return err
 	}
-	defer logger.ErrorIfCalling(src.Close)
+	defer func() {
+		if cerr := src.Close(); cerr != nil {
+			err = multierr.Append(err, cerr)
+		}
+	}()
 
 	dst, err := os.OpenFile(dstPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, perms)
 	if err != nil {
 		return err
 	}
-	defer logger.ErrorIfCalling(dst.Close)
+	defer func() {
+		if cerr := dst.Close(); cerr != nil {
+			err = multierr.Append(err, cerr)
+		}
+	}()
 
 	err = EnsureFileMaxPerms(dst, perms)
 	if err != nil {
@@ -101,25 +114,33 @@ func EnsureFileMaxPerms(file *os.File, perms os.FileMode) error {
 
 // Ensures that the file at the given filepath has permissions that are
 // no more permissive than the given ones.
-func EnsureFilepathMaxPerms(filepath string, perms os.FileMode) error {
+func EnsureFilepathMaxPerms(filepath string, perms os.FileMode) (err error) {
 	dst, err := os.OpenFile(filepath, os.O_RDWR, perms)
 	if err != nil {
 		return err
 	}
-	defer logger.ErrorIfCalling(dst.Close)
+	defer func() {
+		if cerr := dst.Close(); cerr != nil {
+			err = multierr.Append(err, cerr)
+		}
+	}()
 
 	return EnsureFileMaxPerms(dst, perms)
 }
 
 // FilesInDir returns an array of filenames in the directory.
-func FilesInDir(dir string) ([]string, error) {
+func FilesInDir(dir string) (r []string, err error) {
 	f, err := os.Open(dir)
 	if err != nil {
 		return []string{}, err
 	}
-	defer logger.ErrorIfCalling(f.Close)
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			err = multierr.Append(err, cerr)
+		}
+	}()
 
-	r, err := f.Readdirnames(-1)
+	r, err = f.Readdirnames(-1)
 	if err != nil {
 		return []string{}, err
 	}

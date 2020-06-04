@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/smartcontractkit/chainlink/core/logger"
 	"io"
 	"sort"
 	"strings"
+
+	"go.uber.org/multierr"
 
 	"golang.org/x/text/unicode/norm"
 )
@@ -20,10 +21,9 @@ import (
 // function due to differences in JSON implementations and information loss.
 // e.g:
 // 	JSON does not have a requirement to respect object key ordering.
-func NormalizedJSON(val []byte) (string, error) {
+func NormalizedJSON(val []byte) (s string, err error) {
 	// Unmarshal into a generic interface{}
 	var data interface{}
-	var err error
 	if err = json.Unmarshal(val, &data); err != nil {
 		return "", err
 	}
@@ -33,7 +33,11 @@ func NormalizedJSON(val []byte) (string, error) {
 
 	// Wrap the buffer in a normalization writer
 	wc := norm.NFC.Writer(writer)
-	defer logger.ErrorIfCalling(wc.Close)
+	defer func() {
+		if cerr := wc.Close(); cerr != nil {
+			err = multierr.Append(err, cerr)
+		}
+	}()
 
 	// Now marshal the generic interface
 	if err = marshal(wc, data); err != nil {
@@ -45,7 +49,8 @@ func NormalizedJSON(val []byte) (string, error) {
 	if err = writer.Flush(); err != nil {
 		return "", err
 	}
-	return buffer.String(), nil
+	s = buffer.String()
+	return s, nil
 }
 
 // recursively write elements of the JSON to the hash, making sure to sort
