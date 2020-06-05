@@ -1244,22 +1244,6 @@ func (orm *ORM) getDefaultKey() (models.Key, error) {
 	return availableKeys[0], nil
 }
 
-// SaveLogCursor saves the log cursor.
-func (orm *ORM) SaveLogCursor(logCursor *models.LogCursor) error {
-	orm.MustEnsureAdvisoryLock()
-	return orm.db.Save(logCursor).Error
-}
-
-// FindLogCursor will find the given log cursor.
-func (orm *ORM) FindLogCursor(name string) (models.LogCursor, error) {
-	orm.MustEnsureAdvisoryLock()
-	lc := models.LogCursor{}
-	err := orm.db.
-		Where("name = ?", name).
-		First(&lc).Error
-	return lc, err
-}
-
 // HasConsumedLog reports whether the given consumer had already consumed the given log
 func (orm *ORM) HasConsumedLog(rawLog eth.RawLog, JobID *models.ID) (bool, error) {
 	lc := models.LogConsumption{

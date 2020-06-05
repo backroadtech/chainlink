@@ -20,7 +20,6 @@ func Migrate(tx *gorm.DB) error {
 			error text,
 			broadcast_at timestamptz,
 			created_at timestamptz NOT NULL,
-			-- NOTE: state is strictly speaking redundant but helps to make the FSM explicit and allows for cleaner lookups
 			state eth_txes_state NOT NULL DEFAULT 'unstarted'::eth_txes_state
 		);
 		  
@@ -88,8 +87,7 @@ func Migrate(tx *gorm.DB) error {
 			broadcast_before_block_num IS NULL OR broadcast_before_block_num > 0
 		);
 		
-		-- Should never really have more than one in_progress attempt per key, but we cannot (easily) enforce this at the DB level
-		-- We certainly should never have more than one in_progress attempt per eth_tx
+		-- Should never have more than one in_progress attempt per nonce
 		CREATE UNIQUE INDEX idx_only_one_in_progress_attempt_per_eth_tx ON eth_tx_attempts (eth_tx_id) WHERE state = 'in_progress';
 
 		CREATE UNIQUE INDEX idx_eth_tx_attempts_hash ON eth_tx_attempts (hash);

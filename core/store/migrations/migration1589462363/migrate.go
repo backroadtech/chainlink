@@ -10,5 +10,8 @@ func Migrate(tx *gorm.DB) error {
 		ALTER TABLE keys ADD COLUMN next_nonce BIGINT NOT NULL DEFAULT 0;
 		CREATE UNIQUE INDEX idx_unique_keys_address ON keys (address);
 		ALTER TABLE keys ADD COLUMN id SERIAL NOT NULL;
+		ALTER TABLE keys ADD CONSTRAINT chk_address_length CHECK (
+			octet_length(address) = 20
+		);
 	`).Error
 }

@@ -17,7 +17,7 @@ import (
 const (
 	// databasePollInterval indicates how long to wait each time before polling
 	// the database for new eth_txes to send
-	databasePollInterval = 15 * time.Second
+	databasePollInterval = 5 * time.Second
 
 	// EthBroadcaster advisory lock class ID
 	ethBroadcasterAdvisoryLockClassID = 0
@@ -33,7 +33,7 @@ const (
 // into the chain falls on the shoulders of the ethConfirmer.
 //
 // What ethBroadcaster does guarantee is:
-// - a monotic series of increasing nonces for eth_txes that can all eventually be confirmed if you retry enough times
+// - a monotonic series of increasing nonces for eth_txes that can all eventually be confirmed if you retry enough times
 // - transition of eth_txes out of unstarted into either fatal_error or unconfirmed
 // - existence of a saved eth_tx_attempt
 type EthBroadcaster interface {

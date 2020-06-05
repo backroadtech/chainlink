@@ -52,7 +52,6 @@ func TestEthConfirmer_SetBroadcastBeforeBlockNum(t *testing.T) {
 	config, cleanup := cltest.NewConfig(t)
 	defer cleanup()
 	ec := bulletprooftxmanager.NewEthConfirmer(store, config)
-	// toAddress := gethCommon.HexToAddress("0x6C03DDA95a2AEd917EeCc6eddD4b9D16E6380411")
 
 	etx := cltest.MustInsertUnconfirmedEthTxWithBroadcastAttempt(t, store, 0)
 
@@ -952,5 +951,9 @@ func TestEthConfirmer_EnsureConfirmedTransactionsInLongestChain(t *testing.T) {
 		assert.Equal(t, models.EthTxAttemptBroadcast, attempt.State)
 
 		gethClient.AssertExpectations(t)
+	})
+
+	t.Run("unconfirms and rebroadcasts only the attempt with the highest gas price", func(t *testing.T) {
+		// TODO
 	})
 }

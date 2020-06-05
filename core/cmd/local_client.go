@@ -37,7 +37,7 @@ const ownerPermsMask = os.FileMode(0700)
 func (cli *Client) RunNode(c *clipkg.Context) error {
 	err := cli.Config.Validate()
 	if err != nil {
-		return err
+		return cli.errorOut(err)
 	}
 
 	updateConfig(cli.Config, c.Bool("debug"), c.Int64("replay-from-block"))
@@ -422,6 +422,7 @@ func (cli *Client) DeleteUser(c *clipkg.Context) error {
 }
 
 // SetNextNonce manually updates the keys.next_nonce field for the given key with the given nonce value
+// TODO: Put unit testing on this
 func (cli *Client) SetNextNonce(c *clipkg.Context) error {
 	addressHex := c.String("address")
 	nextNonce := c.Uint64("nextNonce")
