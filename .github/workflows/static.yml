@@ -34,6 +34,14 @@ jobs:
       - uses: actions/setup-go@v2
       - run: go install honnef.co/go/tools/cmd/staticcheck
       - run: $HOME/go/bin/staticcheck ./...
+  sec:
+    name: sec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+      - run: go get -v github.com/securego/gosec/cmd/gosec
+      - run: gosec -exclude=G101,G104,G204,G304 ./...
   # TODO: Enable linters below one by one and fix issues with each
   # lint:
   #   name: Lint

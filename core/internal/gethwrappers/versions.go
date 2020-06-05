@@ -3,6 +3,7 @@ package gethwrappers
 import (
 	"bufio"
 	"fmt"
+	"github.com/smartcontractkit/chainlink/core/logger"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -102,7 +103,7 @@ func WriteVersionsDB(db *IntegratedVersion) error {
 		return errors.Wrap(err, "could not construct path to versions DB")
 	}
 	f, err := os.Create(versionsDBPath)
-	defer f.Close()
+	defer logger.ErrorIfCalling(f.Close)
 	if err != nil {
 		return errors.Wrapf(err, "while opening %s", versionsDBPath)
 	}
